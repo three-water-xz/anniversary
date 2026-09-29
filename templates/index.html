@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>给虾滑的秘密基地</title>
+    <!-- SVG 图标消除 favicon.ico 404 错误 -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💌</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pink: #FFB6C1;
+            --blue: #87CEFA;
+            --white: #FFFFFF;
+            --red: #FF69B4;
+            --kraft-bg: #dfba8c;
+            --kraft-dark: #c49c6d;
+            --kraft-deep: #b28657;
+            --wax-color: #a82323;
+        }
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; padding: 0; 
+            background: linear-gradient(135deg, #e0f2fe 0%, #fae8ff 50%, #ffe4e6 100%); 
+            font-family: 'Nunito', 'Microsoft YaHei', sans-serif; 
+            color: #555; min-height: 100vh; 
+            display: flex; flex-direction: column; align-items: center; 
+            overflow-x: hidden; 
+        }
+
+        /* ================= 🔒 永远固定在屏幕左上方的返回按钮 ================= */
+        .global-back-btn { 
+            position: fixed !important; 
+            top: 16px !important; 
+            left: 16px !important; 
+            padding: 8px 18px; 
+            background: #fffdfa url('/static/paper_texture.jpg') repeat;
+            border: 1px solid rgba(220, 205, 190, 0.95); 
+            border-radius: 30px; 
+            color: #ff477e; 
+            font-weight: bold; 
+            font-size: 0.9rem; 
+            cursor: pointer; 
+            box-shadow: 0 4px 14px rgba(60, 45, 30, 0.15); 
+            z-index: 99999 !important; /* 顶级图层，页面滑动时永不遮挡 */
+            display: none; 
+            align-items: center; 
+            gap: 5px; 
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .global-back-btn:active { transform: scale(0.93); }
+
+        /* 右上角音乐浮动控件 */
+        .music-btn { 
+            position: fixed; top: 16px; right: 16px; width: 42px; height: 42px; 
+            background: linear-gradient(135deg, var(--pink), var(--red)); 
+            border-radius: 50%; color: white; display: flex; justify-content: center; align-items: center; 
+            cursor: pointer; box-shadow: 0 4px 15px rgba(255, 105, 180, 0.4); z-index: 99999; transition: transform 0.3s; 
+        }
+        .music-playing { animation: spin 4s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .music-menu { 
+            position: fixed; top: 68px; right: 16px; 
+            background: #fdfbf7 url('/static/paper_texture.jpg') repeat;
+            padding: 15px; border-radius: 20px; border: 1.5px dashed var(--pink);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); 
+            z-index: 99999; display: none; width: 230px; 
+        }
+        .music-menu-title { font-family: 'Zhi Mang Xing', cursive; font-size: 1.4rem; color: #ff477e; text-align: center; margin-bottom: 8px; border-bottom: 2px solid #ffe4e6; padding-bottom: 4px; }
+        .music-list { max-height: 190px; overflow-y: auto; margin-bottom: 10px; }
+        .music-item { padding: 8px 10px; margin: 5px 0; background: rgba(255, 240, 245, 0.85); border-radius: 10px; cursor: pointer; font-size: 0.85rem; color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .music-item.active { background: linear-gradient(135deg, var(--pink), var(--blue)); color: white; font-weight: bold; }
+        .music-ctrl-btn { width: 100%; padding: 7px; border: 1px solid var(--pink); border-radius: 12px; background: #fff; color: var(--red); font-weight: bold; cursor: pointer; }
+
+        /* ================= 💌 大尺寸牛皮纸信封开场特效 ================= */
+        #welcome-mask {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            background: radial-gradient(circle at center, #f5ece1 0%, #d8c2a7 100%);
+            z-index: 100000; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 20px; transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        #welcome-mask.fade-out {
+            opacity: 0;
+            transform: scale(1.06);
+            pointer-events: none;
+        }
+
+        .envelope-wrapper {
+            position: relative;
+            width: 460px;
+            height: 310px;
+            perspective: 1000px;
+            cursor: pointer;
+            filter: drop-shadow(0 20px 35px rgba(90, 60, 35, 0.4));
+            transition: transform 0.3s ease;
+        }
+        .envelope-wrapper:hover {
+            transform: translateY(-5px);
+        }
+
+        .envelope {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: var(--kraft-bg);
+            border-radius: 12px;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.1);
+            overflow: visible;
+        }
+
+        .inner-paper {
+            position: absolute;
+            left: 5%;
+            top: 8px;
+            width: 90%;
+            height: 92%;
+            background-color: #fdfbf7;
+            background-image: url('/static/paper_texture.jpg');
+            background-repeat: repeat;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+            padding: 25px 20px;
+            text-align: center;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px dashed rgba(255, 182, 193, 0.6);
+        }
+        .inner-paper .paper-title {
+            font-family: 'Zhi Mang Xing', cursive;
+            color: #ff477e;
+            font-size: 2.2rem;
+            margin: 0;
+        }
+        .inner-paper .paper-sub {
+            font-size: 1rem;
+            color: #8c7355;
+            margin-top: 8px;
+            letter-spacing: 1px;
+        }
+
+        .envelope-pocket {
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 0; height: 0;
+            border-left: 230px solid var(--kraft-dark);
+            border-right: 230px solid var(--kraft-dark);
+            border-top: 155px solid transparent;
+            border-bottom: 155px solid var(--kraft-deep);
+            border-radius: 0 0 12px 12px;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .envelope-flap {
+            position: absolute;
+            top: 0; left: 0;
+            width: 0; height: 0;
+            border-left: 230px solid transparent;
+            border-right: 230px solid transparent;
+            border-top: 170px solid var(--kraft-bg);
+            transform-origin: top center;
+            transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 4;
+            filter: drop-shadow(0 6px 8px rgba(0,0,0,0.15));
+        }
+
+        .wax-seal {
+            position: absolute;
+            top: 130px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 64px;
+            height: 64px;
+            background: radial-gradient(circle at 35% 35%, #d13d3d, var(--wax-color) 70%, #701111);
+            border-radius: 50%;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.35), inset 0 2px 5px rgba(255,255,255,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ffe6a3;
+            font-size: 1.7rem;
+            z-index: 5;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.4s;
+        }
+        .wax-seal:active { transform: translateX(-50%) scale(0.92); }
+
+        .envelope-wrapper.open .envelope-flap {
+            transform: rotateX(180deg);
+            z-index: 1;
+        }
+        .envelope-wrapper.open .inner-paper {
+            transform: translateY(-135px);
+        }
+        .envelope-wrapper.open .wax-seal {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .open-envelope-btn {
+            margin-top: 55px;
+            padding: 14px 44px;
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(135deg, #FFB6C1, #FF69B4);
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4);
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .open-envelope-btn:active { transform: scale(0.95); }
+        .envelope-hint-text {
+            margin-top: 14px;
+            font-size: 0.9rem;
+            color: #8c7355;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 500px) {
+            .envelope-wrapper { width: 320px; height: 215px; }
+            .envelope-pocket {
+                border-left-width: 160px; border-right-width: 160px;
+                border-top-width: 105px; border-bottom-width: 110px;
+            }
+            .envelope-flap {
+                border-left-width: 160px; border-right-width: 160px;
+                border-top-width: 118px;
+            }
+            .wax-seal { top: 90px; width: 50px; height: 50px; font-size: 1.35rem; }
+            .inner-paper .paper-title { font-size: 1.6rem; }
+            .inner-paper .paper-sub { font-size: 0.85rem; }
+            .envelope-wrapper.open .inner-paper { transform: translateY(-90px); }
+        }
+
+        /* ================= 📜 纸张肌理通用类 ================= */
+        .paper-sheet {
+            background-color: #fdfbf7;
+            background-image: url('/static/paper_texture.jpg');
+            background-repeat: repeat;
+            box-shadow: 
+                0 2px 5px rgba(0,0,0,0.04), 
+                0 15px 30px rgba(60, 45, 30, 0.08), 
+                inset 0 0 60px rgba(215, 195, 175, 0.35);
+            border: 1px solid rgba(225, 215, 200, 0.85);
+            border-radius: 24px;
+            position: relative;
+        }
+
+        #toast {
+            position: fixed; top: 25px; left: 50%; transform: translateX(-50%) translateY(-60px);
+            background: rgba(255, 105, 180, 0.95); backdrop-filter: blur(8px);
+            color: white; padding: 10px 24px; border-radius: 30px; font-weight: bold;
+            font-size: 0.95rem; z-index: 999999; box-shadow: 0 4px 15px rgba(255, 105, 180, 0.35);
+            transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); opacity: 0; pointer-events: none;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* 内容板块样式 */
+        .page-node {
+            display: none;
+            width: 92%; max-width: 820px; 
+            padding: 26px 22px; margin-top: 75px; margin-bottom: 45px; 
+            text-align: center; 
+        }
+        .page-node.active-section { 
+            display: block !important; 
+        }
+
+        #home { 
+            margin: 0; padding: 0 15px; height: 100vh; width: 100%; 
+            display: none; flex-direction: column; justify-content: center; align-items: center; 
+            position: relative; 
+        }
+        #home.active-section { display: flex !important; }
+
+        .home-paper-card {
+            padding: 35px 25px 28px;
+            max-width: 660px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hero-content-wrapper { 
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; z-index: 10; width: 100%; 
+            text-align: center; 
+        }
+
+        .typewriter-container {
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .hero-poem {
+            font-family: 'Zhi Mang Xing', cursive;
+            font-size: clamp(1.65rem, 5.2vw, 2.7rem);
+            color: #ff477e;
+            line-height: 1.45;
+            text-shadow: 2px 2px 8px rgba(255, 71, 126, 0.18);
+            margin: 0;
+            white-space: pre-wrap;
+            letter-spacing: 1.5px;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1.1em;
+            background-color: #ff477e;
+            vertical-align: text-bottom;
+            margin-left: 3px;
+            animation: blink 0.8s infinite;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .hero-subtitle { 
+            font-size: clamp(0.85rem, 2.5vw, 1.1rem); 
+            color: #a47a7a; letter-spacing: 0.5px; 
+            line-height: 1.3; margin-top: 14px; margin-bottom: 22px;
+            word-wrap: break-word; padding: 0 10px;
+        }
+
+        .hero-btn-area { display: flex; justify-content: center; gap: 18px; }
+
+        .circle-btn { width: 80px; height: 80px; border-radius: 50%; border: none; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-weight: bold; font-size: 0.82rem; cursor: pointer; transition: transform 0.25s, box-shadow 0.25s; }
+        .circle-btn:active { transform: scale(0.92); }
+        .circle-btn .icon { font-size: 1.5rem; margin-bottom: 2px; } 
+
+        .bg-letter { background: linear-gradient(135deg, #FFB6C1, #FF69B4); box-shadow: 0 6px 16px rgba(255, 105, 180, 0.3); }
+        .bg-video { background: linear-gradient(135deg, #87CEFA, #6495ED); box-shadow: 0 6px 16px rgba(135, 206, 250, 0.3); }
+        .bg-photo { background: linear-gradient(135deg, #FFD700, #FFA500); box-shadow: 0 6px 16px rgba(255, 165, 0, 0.3); }
+
+        .decor { position: absolute; font-size: 2.8rem; pointer-events: none; z-index: 1; }
+        .anim-float { animation: float 6s ease-in-out infinite; }
+        .anim-bounce { animation: bounce 4s ease-in-out infinite; }
+        .anim-sway { animation: sway 5s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0) rotate(-5deg); } 50% { transform: translateY(-30px) rotate(5deg); } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
+        @keyframes sway { 0%, 100% { transform: translateX(0) rotate(-8deg); } 50% { transform: translateX(16px) rotate(8deg); } }
+
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1.5px dashed rgba(255, 182, 193, 0.6); }
+        .title { font-family: 'Zhi Mang Xing', cursive; font-size: 2.1rem; color: #ff477e; margin: 0; }
+
+        .mini-upload-btn { display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px; font-size: 0.82rem; font-weight: bold; border-radius: 20px; color: white; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.06); }
+
+        .content-box { 
+            text-align: left; line-height: 1.85; white-space: pre-wrap; font-size: 1.05rem; 
+            max-height: 58vh; overflow-y: auto; padding: 18px; 
+            background: rgba(255, 255, 255, 0.65); border-radius: 14px; 
+            border: 1px dashed rgba(220, 205, 190, 0.7);
+        }
+        
+        .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px; margin-top: 12px; }
+        @media (min-width: 600px) {
+            .media-grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 15px; }
+        }
+
+        .media-item-box { 
+            position: relative; width: 100%; aspect-ratio: 1 / 1; 
+            border-radius: 12px; overflow: hidden; box-shadow: 0 3px 8px rgba(0,0,0,0.08); 
+            background: #eee; cursor: pointer; transition: transform 0.25s, opacity 0.35s; 
+            -webkit-user-select: none; user-select: none;
+            border: 4px solid #fff;
+        }
+        .media-item-box img, .media-item-box video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+        .media-item-box video { pointer-events: auto; }
+
+        .tips-bar { font-size: 0.75rem; color: #a89a8b; text-align: right; margin-top: 4px; }
+
+        @media (max-width: 600px) {
+            .circle-btn { width: 68px; height: 68px; font-size: 0.76rem; }
+            .circle-btn .icon { font-size: 1.3rem; }
+            .decor { font-size: 1.7rem; }
+            .title { font-size: 1.7rem; }
+            .page-node { padding: 16px 12px; }
+            .typewriter-container { min-height: 170px; }
+            .global-back-btn { font-size: 0.82rem; padding: 7px 14px; top: 14px !important; left: 14px !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast"></div>
+
+    <!-- 锁定悬浮在屏幕左上方的返回按钮（下滑相册时绝不滑走） -->
+    <div id="global-back" class="global-back-btn" onclick="navTo('home')">
+        <span>&larr;</span> 翻回上一页
+    </div>
+
+    <!-- 背景音频播放器 -->
+    <audio id="bgm" loop preload="auto" {% if music_files|length > 0 %}src="{{ url_for('static', filename='music/' + music_files[0]) }}"{% endif %}></audio>
+
+    <div class="music-btn" id="music-icon" onclick="toggleMusicMenu(event)">🎵</div>
+    <div class="music-menu" id="music-menu">
+        <div class="music-menu-title">✨ 专属歌单 ✨</div>
+        <div class="music-list" id="music-list">
+            {% for song in music_files %}
+                <div class="music-item {% if loop.index == 1 %}active{% endif %}" data-song="{{ song }}" onclick="playSongByElement(this)">
+                    <span>🎶</span> {{ song|replace('.mp3', '')|replace('.MP3', '') }}
+                </div>
+            {% endfor %}
+        </div>
+        <button class="music-ctrl-btn" onclick="playPause()">⏯ 播放 / 暂停</button>
+    </div>
+
+    <!-- ================= 拟真超大牛皮纸信封遮罩 ================= -->
+    <div id="welcome-mask">
+        <div class="envelope-wrapper" id="envelopeWrapper" onclick="openEnvelope()">
+            <div class="envelope">
+                <div class="inner-paper">
+                    <div class="paper-title">TO: 虾滑</div>
+                    <div class="paper-sub">✨ 开启属于我们的独家回忆 ✨</div>
+                </div>
+                <div class="envelope-pocket"></div>
+                <div class="envelope-flap"></div>
+                <div class="wax-seal">💌</div>
+            </div>
+        </div>
+
+        <button class="open-envelope-btn" onclick="openEnvelope()">
+            <span>🕊️</span> 拆开信件
+        </button>
+        <div class="envelope-hint-text">O P E N</div>
+    </div>
+
+    <!-- 首页 (纸质卡片) -->
+    <div id="home" class="active-section">
+        <div class="decor anim-float" style="top: 10%; left: 8%;">🎈</div>
+        <div class="decor anim-float" style="top: 12%; right: 8%;">🎈</div>
+        <div class="decor anim-bounce" style="bottom: 12%; left: 8%;">🐰</div>
+        <div class="decor anim-sway" style="bottom: 12%; right: 8%;">🐧</div>
+
+        <div class="home-paper-card paper-sheet">
+            <div class="hero-content-wrapper">
+                <div class="typewriter-container">
+                    <div class="hero-poem" id="typewriterText"></div>
+                </div>
+                <div class="hero-subtitle">Hello, my favorite unseen shrimp paste</div>
+                
+                <div class="hero-btn-area">
+                    <button class="circle-btn bg-letter" onclick="navTo('letter')">
+                        <div class="icon">💌</div>
+                        <div>查收信件</div>
+                    </button>
+                    <button class="circle-btn bg-video" onclick="navTo('video')">
+                        <div class="icon">🎬</div>
+                        <div>视频回忆</div>
+                    </button>
+                    <button class="circle-btn bg-photo" onclick="navTo('photo')">
+                        <div class="icon">📸</div>
+                        <div>我们的相册</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 信件页 (纸张质感) -->
+    <div class="page-node paper-sheet" id="letter">
+        <div class="section-header" style="justify-content: center;">
+            <div class="title">给虾滑的信</div>
+        </div>
+        <div class="content-box">{{ letter }}</div>
+    </div>
+
+    <!-- 视频回忆页 (纸张质感) -->
+    <div class="page-node paper-sheet" id="video">
+        <div class="section-header">
+            <div class="title">视频回忆</div>
+            <label class="mini-upload-btn bg-video">
+                <span>➕</span> 上传视频
+                <input type="file" accept="video/mp4,video/webm" style="display: none;" onchange="ajaxUpload(this, 'video')">
+            </label>
+        </div>
+        <div class="tips-bar">💡 右键 或 手机长按 可删除视频</div>
+        <div class="media-grid" id="video-grid">
+            {% for vid in videos %}
+                <div class="media-item-box" data-type="video" data-name="{{ vid }}" oncontextmenu="handleDeletePrompt(event, this)">
+                    <video controls preload="metadata">
+                        <source src="{{ url_for('static', filename='uploads/videos/' + vid) }}">
+                    </video>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- 相册页 (纸张质感) -->
+    <div class="page-node paper-sheet" id="photo">
+        <div class="section-header">
+            <div class="title">我们的相册</div>
+            <label class="mini-upload-btn bg-photo">
+                <span>➕</span> 上传照片
+                <input type="file" accept="image/*" style="display: none;" onchange="ajaxUpload(this, 'photo')">
+            </label>
+        </div>
+        <div class="tips-bar">💡 右键 或 手机长按 可删除照片</div>
+        <div class="media-grid" id="photo-grid">
+            {% for pic in photos %}
+                <div class="media-item-box" data-type="photo" data-name="{{ pic }}" onclick="previewImage(this)" oncontextmenu="handleDeletePrompt(event, this)">
+                    <img src="{{ url_for('static', filename='uploads/photos/' + pic) }}" alt="photo">
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+    const bgm = document.getElementById('bgm');
+    const icon = document.getElementById('music-icon');
+    const menu = document.getElementById('music-menu');
+    let hasOpened = false;
+
+    // 诗词数组及打字机全局状态
+    const poemLines = [
+        "展信佳，虾滑",
+        "素未谋面的我们",
+        "不知不觉中已经陪伴了彼此一年",
+        "未来",
+        "希望我们依旧是我们",
+        "^v^  ❤️  >y<"
+    ];
+    let typedOnce = false;
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    // ================= 逐字打字机动画逻辑 =================
+    function startTypewriter() {
+        if (typedOnce) return;
+        const container = document.getElementById('typewriterText');
+        container.innerHTML = '<span id="text-content"></span><span class="cursor" id="typing-cursor"></span>';
+        const textContent = document.getElementById('text-content');
+        const cursor = document.getElementById('typing-cursor');
+
+        let lineIdx = 0;
+        let charIdx = 0;
+
+        function typeNext() {
+            if (lineIdx < poemLines.length) {
+                const currentLine = poemLines[lineIdx];
+                if (charIdx < currentLine.length) {
+                    textContent.innerHTML += currentLine.charAt(charIdx);
+                    charIdx++;
+                    setTimeout(typeNext, 280);
+                } else {
+                    if (lineIdx < poemLines.length - 1) {
+                        textContent.innerHTML += '<br>';
+                    }
+                    lineIdx++;
+                    charIdx = 0;
+                    setTimeout(typeNext, 500);
+                }
+            } else {
+                typedOnce = true;
+                setTimeout(() => {
+                    if (cursor) cursor.remove();
+                }, 2000);
+            }
+        }
+        typeNext();
+    }
+
+    function renderFullPoem() {
+        const container = document.getElementById('typewriterText');
+        container.innerHTML = poemLines.join('<br>');
+    }
+
+    // ================= 拆开牛皮纸信封 =================
+    function openEnvelope() {
+        if (hasOpened) return;
+        hasOpened = true;
+
+        const envelope = document.getElementById('envelopeWrapper');
+        const mask = document.getElementById('welcome-mask');
+
+        envelope.classList.add('open');
+
+        if (bgm && bgm.src) {
+            bgm.play().then(() => icon.classList.add('music-playing')).catch(e => console.log(e));
+        }
+
+        setTimeout(() => {
+            mask.classList.add('fade-out');
+            setTimeout(() => {
+                mask.style.display = 'none';
+                startTypewriter();
+            }, 800);
+        }, 2000);
+    }
+
+    // ================= 极速切换路由（无卡顿） =================
+    function navTo(targetPageId) {
+        window.scrollTo(0, 0); // 切换时回顶
+
+        document.getElementById('home').classList.remove('active-section');
+        document.querySelectorAll('.page-node').forEach(el => el.classList.remove('active-section'));
+
+        const targetEl = document.getElementById(targetPageId);
+        targetEl.classList.add('active-section');
+
+        // 控制左上角固定按钮显隐
+        document.getElementById('global-back').style.display = targetPageId === 'home' ? 'none' : 'flex';
+
+        if (targetPageId === 'home' && typedOnce) {
+            renderFullPoem();
+        }
+    }
+
+    function toggleMusicMenu(e) { 
+        if(e) e.stopPropagation();
+        menu.style.display = menu.style.display === 'block' ? 'none' : 'block'; 
+    }
+
+    function playPause() { 
+        if (!bgm.src) return;
+        if (bgm.paused) {
+            bgm.play();
+            icon.classList.add('music-playing');
+        } else {
+            bgm.pause();
+            icon.classList.remove('music-playing');
+        }
+    }
+
+    function playSongByElement(element) {
+        const songFileName = element.getAttribute('data-song');
+        if (!songFileName) return;
+        document.querySelectorAll('.music-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+
+        bgm.src = "/static/music/" + encodeURIComponent(songFileName);
+        bgm.load();
+        bgm.play().then(() => icon.classList.add('music-playing')).catch(err => console.log(err));
+    }
+
+    bgm.addEventListener('play', () => icon.classList.add('music-playing'));
+    bgm.addEventListener('pause', () => icon.classList.remove('music-playing'));
+    document.addEventListener('click', (e) => {
+        if (menu && !menu.contains(e.target) && e.target !== icon) menu.style.display = 'none';
+    });
+
+    // ================= 异步上传 =================
+    function ajaxUpload(input, type) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        showToast('正在悄悄上传中...☁️');
+
+        fetch(`/upload/${type}`, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.msg);
+                const grid = document.getElementById(type === 'photo' ? 'photo-grid' : 'video-grid');
+                const box = document.createElement('div');
+                box.className = 'media-item-box';
+                box.setAttribute('data-type', type);
+                box.setAttribute('data-name', data.filename);
+                box.oncontextmenu = (e) => handleDeletePrompt(e, box);
+
+                if (type === 'photo') {
+                    box.onclick = () => previewImage(box);
+                    box.innerHTML = `<img src="${data.url}" alt="photo">`;
+                } else {
+                    box.innerHTML = `<video controls preload="metadata"><source src="${data.url}"></video>`;
+                }
+                grid.insertBefore(box, grid.firstChild);
+                bindTouchEvents(box);
+            } else {
+                showToast(data.msg || '上传失败了');
+            }
+            input.value = '';
+        })
+        .catch(() => showToast('上传出错，请检查文件大小或格式'));
+    }
+
+    // ================= 异步删除 =================
+    function confirmDelete(boxElement) {
+        const type = boxElement.getAttribute('data-type');
+        const filename = boxElement.getAttribute('data-name');
+        const text = type === 'photo' ? '确定要删除这张照片吗？' : '确定要删除这段视频吗？';
+
+        if (confirm(`✨ 温馨提示\n${text}`)) {
+            fetch(`/delete/${type}/${encodeURIComponent(filename)}`, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.msg);
+                    boxElement.style.opacity = '0';
+                    boxElement.style.transform = 'scale(0.8)';
+                    setTimeout(() => boxElement.remove(), 250);
+                } else {
+                    showToast(data.msg);
+                }
+            })
+            .catch(() => showToast('删除失败'));
+        }
+    }
+
+    function handleDeletePrompt(e, box) {
+        e.preventDefault();
+        confirmDelete(box);
+    }
+
+    let isLongPress = false;
+    let timer = null;
+
+    function previewImage(el) {
+        if (isLongPress) return;
+        const img = el.querySelector('img');
+        if (img) window.open(img.src);
+    }
+
+    function bindTouchEvents(box) {
+        box.addEventListener('touchstart', () => {
+            isLongPress = false;
+            timer = setTimeout(() => {
+                isLongPress = true;
+                if (navigator.vibrate) navigator.vibrate(40);
+                confirmDelete(box);
+            }, 650);
+        }, { passive: true });
+
+        box.addEventListener('touchend', () => clearTimeout(timer));
+        box.addEventListener('touchmove', () => clearTimeout(timer));
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll('.media-item-box').forEach(bindTouchEvents);
+
+        document.querySelectorAll('video').forEach(video => {
+            video.addEventListener('play', () => {
+                if (bgm && !bgm.paused) bgm.pause();
+            });
+        });
+    });
+    </script>
+</body>
+</html>
